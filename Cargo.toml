@@ -1,0 +1,26 @@
+[package]
+authors = ["Tim Cheeseman <tim@timcheeseman.com>"]
+categories = ["games"]
+description = "GNU Internet Backgammon Server"
+homepage = "https://cirla.github.io/gibs"
+keywords = ["backgammon", "gnubg"]
+license = "AGPL-3.0"
+name = "gibs"
+repository = "https://github.com/cirla/gibs"
+version = "0.1.0"
+[badges.appveyor]
+repository = "cirla/gibs"
+
+[badges.travis-ci]
+repository = "cirla/gibs"
+
+[dependencies]
+actix = "0.5.8"
+actix-web = "0.6.13"
+clap = "2.31.2"
+config = "0.8.0"
+env_logger = "0.5.10"
+futures = "0.2.1"
+log = "0.4.2"
+serde = "1.0.66"
+serde_derive = "1.0.66"
