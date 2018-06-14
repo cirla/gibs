@@ -3,7 +3,7 @@ mod gnubg;
 pub trait Game {
     type PlayerId;
 
-    fn roll(p: Self::PlayerId);
+    fn roll(self, p: Self::PlayerId);
 }
 
 pub trait GameManager {
