@@ -10,7 +10,7 @@ use server::State;
 pub struct Message(pub String);
 
 #[derive(Message)]
-#[rtype(usize)]
+#[rtype(result = "Result<usize, String>")]
 pub struct Connect {
     pub addr: Recipient<Syn, Message>,
 }
@@ -22,12 +22,14 @@ pub struct Disconnect {
 }
 
 pub struct Lobby {
+    max_sessions: usize,
     sessions: HashMap<usize, Recipient<Syn, Message>>,
 }
 
 impl Lobby {
-    pub fn new() -> Self {
+    pub fn new(max_sessions: usize) -> Self {
         Self {
+            max_sessions: max_sessions,
             sessions: HashMap::new(),
         }
     }
@@ -38,15 +40,20 @@ impl Actor for Lobby {
 }
 
 impl Handler<Connect> for Lobby {
-    type Result = usize;
+    type Result = Result<usize, String>;
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         info!("New connection");
         let id = 0;
 
+        if self.sessions.len() == self.max_sessions {
+            info!("Too many users!");
+            return Err("Too many users!".to_string());
+        }
+
         self.sessions.insert(id, msg.addr);
 
-        id
+        Ok(id)
     }
 }
 
@@ -78,7 +85,8 @@ impl Actor for LobbySession {
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
-                    Ok(res) => act.id = res,
+                    Ok(Ok(res)) => act.id = res,
+                    Ok(Err(err)) => ctx.text(err),
                     _ => ctx.stop(),
                 }
                 fut::ok(())

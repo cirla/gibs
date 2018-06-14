@@ -1,4 +1,4 @@
-use actix::{Addr, Arbiter, Syn, System, SystemRunner};
+use actix::*;
 use actix_web::server::HttpServer;
 use actix_web::App;
 
@@ -16,7 +16,9 @@ pub struct Server {
 impl Server {
     pub fn with_settings(s: Settings) -> Self {
         let sys = System::new("gibs");
-        let lobby: Addr<Syn, _> = Arbiter::start(|_| Lobby::new());
+
+        let max_users = s.lobby.max_users;
+        let lobby: Addr<Syn, _> = Arbiter::start(move |_| Lobby::new(max_users));
 
         HttpServer::new(move || {
             let state = State {

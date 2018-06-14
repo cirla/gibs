@@ -10,14 +10,15 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
+mod game;
 mod lobby;
 mod server;
 mod settings;
 
 use clap::{App, Arg};
 
-use settings::Settings;
 use server::Server;
+use settings::Settings;
 
 fn main() -> Result<(), settings::Error> {
     env_logger::init();
