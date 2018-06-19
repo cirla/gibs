@@ -1,27 +1,28 @@
 module Lobby.State exposing (..)
 
-import Session exposing (..)
+import Json.Decode exposing (decodeString)
 import Lobby.Types exposing (..)
-
-
-initialModel : Model
-initialModel =
-    { session = Nothing
-    }
+import Maybe.Extra exposing (join)
+import Session exposing (..)
 
 
 init : Maybe String -> ( Model, Cmd Msg )
 init session =
-    ( { initialModel | session = Maybe.andThen parseSession session }
-    , Cmd.none
-    )
+    let
+        res =
+            Maybe.map (decodeString decodeSession) session
+    in
+        ( { session = Maybe.map Result.toMaybe res |> join
+          }
+        , Cmd.none
+        )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SessionData data ->
-            ( { model | session = parseSession data }, Cmd.none )
+        Foo ->
+            ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg

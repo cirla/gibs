@@ -9,4 +9,4 @@ type alias Model =
 
 
 type Msg
-    = SessionData String
+    = Foo

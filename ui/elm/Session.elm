@@ -1,5 +1,8 @@
 port module Session exposing (..)
 
+import Json.Decode exposing (Decoder, field, string, succeed)
+import Json.Decode.Extra exposing ((|:))
+
 
 type alias Session =
     { token : String
@@ -9,6 +12,7 @@ type alias Session =
 port setSession : Session -> Cmd msg
 
 
-parseSession : String -> Maybe Session
-parseSession data =
-    Just { token = data }
+decodeSession : Decoder Session
+decodeSession =
+    succeed Session
+        |: (field "token" string)

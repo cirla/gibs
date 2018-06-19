@@ -6,13 +6,6 @@ import Navigation exposing (Location)
 import Types exposing (..)
 
 
-initialModel : Model
-initialModel =
-    { route = Nothing
-    , lobby = Lobby.State.initialModel
-    }
-
-
 init : Flags -> Location -> ( Model, Cmd Msg )
 init flags location =
     let
@@ -22,9 +15,8 @@ init flags location =
         ( lobby, lobbyCmd ) =
             Lobby.State.init flags.session
     in
-        ( { initialModel
-            | route = route
-            , lobby = lobby
+        ( { route = route
+          , lobby = lobby
           }
         , Cmd.map LobbyMsg lobbyCmd
         )
