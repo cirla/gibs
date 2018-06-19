@@ -1,12 +1,14 @@
 module Lobby.Types exposing (..)
 
+import Login.Types
 import Session exposing (Session)
 
 
 type alias Model =
-    { session : Maybe Session
+    { login : Login.Types.Model
+    , session : Maybe Session
     }
 
 
 type Msg
-    = Foo
+    = LoginMsg Login.Types.Msg

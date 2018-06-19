@@ -5,7 +5,8 @@ import Json.Decode.Extra exposing ((|:))
 
 
 type alias Session =
-    { token : String
+    { username : String
+    , token : String
     }
 
 
@@ -15,4 +16,5 @@ port setSession : Session -> Cmd msg
 decodeSession : Decoder Session
 decodeSession =
     succeed Session
+        |: (field "username" string)
         |: (field "token" string)
