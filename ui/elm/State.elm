@@ -13,14 +13,14 @@ initialModel =
     }
 
 
-init : Location -> ( Model, Cmd Msg )
-init location =
+init : Flags -> Location -> ( Model, Cmd Msg )
+init flags location =
     let
         route =
             parseRoute location
 
         ( lobby, lobbyCmd ) =
-            Lobby.State.init
+            Lobby.State.init flags.session
     in
         ( { initialModel
             | route = route

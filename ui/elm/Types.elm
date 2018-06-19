@@ -5,6 +5,11 @@ import Nav exposing (Route)
 import Navigation exposing (Location)
 
 
+type alias Flags =
+    { session : Maybe String
+    }
+
+
 type alias Model =
     { route : Maybe Route
     , lobby : Lobby.Types.Model

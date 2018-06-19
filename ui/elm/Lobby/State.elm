@@ -1,17 +1,18 @@
 module Lobby.State exposing (..)
 
+import Session exposing (..)
 import Lobby.Types exposing (..)
 
 
 initialModel : Model
 initialModel =
-    { foo = True
+    { session = Nothing
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( initialModel
+init : Maybe String -> ( Model, Cmd Msg )
+init session =
+    ( { initialModel | session = Maybe.andThen parseSession session }
     , Cmd.none
     )
 
@@ -19,5 +20,10 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Foo ->
-            ( model, Cmd.none )
+        SessionData data ->
+            ( { model | session = parseSession data }, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none

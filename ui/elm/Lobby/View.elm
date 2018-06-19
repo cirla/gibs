@@ -7,4 +7,15 @@ import Lobby.Types exposing (..)
 root : Model -> Html Msg
 root model =
     div []
-        [ p [] [ text "Lobby" ] ]
+        [ p []
+            [ text
+                ("Welcome, "
+                    ++ case model.session of
+                        Just session ->
+                            session.token
+
+                        Nothing ->
+                            "Guest"
+                )
+            ]
+        ]

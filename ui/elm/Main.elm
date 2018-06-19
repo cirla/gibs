@@ -1,14 +1,14 @@
 module Main exposing (main)
 
-import Navigation exposing (program)
+import Navigation exposing (programWithFlags)
 import State exposing (init, update, subscriptions)
 import Types exposing (..)
 import View exposing (root)
 
 
-main : Program Never Model Msg
+main : Program Flags Model Msg
 main =
-    program UrlChange
+    programWithFlags UrlChange
         { init = init
         , view = root
         , update = update

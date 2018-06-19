@@ -7,6 +7,14 @@ import faSolid from '@fortawesome/fontawesome-free-solid'
 
 require('../css/app.scss');
 
-var Elm = require('../elm/Main.elm');
+let Elm = require('../elm/Main.elm');
 const elmDiv = document.getElementById('main');
-const elmApp = Elm.Main.embed(elmDiv);
+
+let session = localStorage.getItem('gibs-session');
+const elmApp = Elm.Main.embed(elmDiv, {
+    session: session
+});
+
+elmApp.ports.setSession.subscribe(function (session) {
+    localStorage.setItem('gibs-session', session);
+});
