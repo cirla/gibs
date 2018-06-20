@@ -9,8 +9,9 @@
     "url": "https://github.com/cirla/gibs"
   },
   "scripts": {
+    "dev-server": "webpack-dev-server --mode development --hot --inline",
     "build": "webpack --mode production --optimize-minimize",
-    "dev-server": "webpack-dev-server --mode development --hot --inline"
+    "start": "cargo run -- -c config.toml"
   },
   "dependencies": {},
   "devDependencies": {
