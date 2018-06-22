@@ -9,6 +9,14 @@ This project is an attempt to make it easy for anyone to host a backgammon serve
 
 ## Goals
 
-- [GnuBG](http://www.gnubg.org/) backend
+- [GnuBG](http://www.gnubg.org/) backend for games
 - WebSocket-based protocol for ease of implementing web and native clients
+- Included web UI
+- Basic chat system (public lobby, private whispers)
 - Elo rating system
+
+## Endpoints
+
+- `/` - redirect to `/static/index.html` (built-in web ui)
+- `/login` - login and receive JWT for use authorizing with websocket
+- `/ws` - websocket endpoint for [the protocol](docs/protocol.md)

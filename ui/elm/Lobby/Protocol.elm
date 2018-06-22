@@ -1,6 +1,6 @@
 module Lobby.Protocol exposing (connect, decode, say)
 
-import Json.Decode exposing (Decoder, at, field, oneOf, string, succeed)
+import Json.Decode exposing (Decoder, field, oneOf, string, succeed)
 import Json.Decode.Extra exposing ((|:))
 import Json.Encode as Json
 import Lobby.Types exposing (..)
@@ -38,14 +38,21 @@ decodeMessage =
 connect : String -> Cmd msg
 connect token =
     Json.object
-        [ ( "connect", Json.string token ) ]
+        [ ( "connect"
+          , Json.object
+                [ ( "token", Json.string token ) ]
+          )
+        ]
         |> send
 
 
 say : String -> Cmd msg
 say message =
     Json.object
-        [ ( "say", Json.string message )
+        [ ( "say"
+          , Json.object
+                [ ( "body", Json.string message ) ]
+          )
         ]
         |> send
 
