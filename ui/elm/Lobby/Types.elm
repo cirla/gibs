@@ -20,6 +20,3 @@ type Event
 type Msg
     = LoginMsg Login.Types.Msg
     | IncomingMsg String
-    | Connect String
-    | Disconnect
-    | Say String
