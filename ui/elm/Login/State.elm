@@ -18,6 +18,7 @@ update msg model =
             ( model, login model )
 
         LoginResponse res ->
+            -- Handled by parent
             ( model, Cmd.none )
 
         Password p ->

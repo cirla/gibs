@@ -42,4 +42,4 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Sub.map LobbyMsg (Lobby.State.subscriptions model.lobby)

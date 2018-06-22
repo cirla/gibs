@@ -6,6 +6,7 @@ import Login.State
 import Login.Types
 import Maybe.Extra exposing (join)
 import Session exposing (..)
+import WebSocket exposing (listen, send)
 
 
 init : Maybe String -> ( Model, Cmd Msg )
@@ -13,19 +14,45 @@ init session =
     let
         res =
             Maybe.map (decodeString decodeSession) session
+
+        model =
+            { login = Login.State.init
+            , session = Maybe.map Result.toMaybe res |> join
+            , events = []
+            }
     in
-        ( { login = Login.State.init
-          , session = Maybe.map Result.toMaybe res |> join
-          }
-        , Cmd.none
+        ( model
+        , case model.session of
+            Just s ->
+                connect s.token
+
+            Nothing ->
+                Cmd.none
         )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Connect token ->
+            ( model, Cmd.none )
+
+        Disconnect ->
+            ( model, Cmd.none )
+
+        IncomingMsg incMsg ->
+            handleIncoming incMsg model
+
         LoginMsg loginMsg ->
             updateLogin loginMsg model
+
+        Say sayMsg ->
+            ( model, Cmd.none )
+
+
+handleIncoming : String -> Model -> ( Model, Cmd Msg )
+handleIncoming msg model =
+    ( model, Cmd.none )
 
 
 updateLogin : Login.Types.Msg -> Model -> ( Model, Cmd Msg )
@@ -34,7 +61,7 @@ updateLogin msg model =
         Login.Types.LoginResponse res ->
             case res of
                 Ok session ->
-                    ( { model | session = Just session }, setSession session )
+                    { model | session = Just session } ! [ setSession session, connect session.token ]
 
                 Err e ->
                     -- TODO: Handle Error
@@ -48,6 +75,12 @@ updateLogin msg model =
                 ( { model | login = login }, Cmd.map LoginMsg loginCmd )
 
 
+connect : String -> Cmd Msg
+connect token =
+    -- TODO: move to a Protocol.elm and use JSON encoding/decoding
+    send "ws://localhost:8081/ws" ("{\"connect\": \"" ++ token ++ "\"}")
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    listen "ws://localhost:8081/ws" IncomingMsg
