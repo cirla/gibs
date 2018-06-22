@@ -66,7 +66,11 @@ var devConfig = {
   devServer: {
     historyApiFallback: true,
     contentBase: './ui',
-    hot: true
+    hot: true,
+    proxy: [{
+      context: ['/login', '/ws'],
+      target: 'http://localhost:8081',
+    }]
   },
   module: {
     rules: [{

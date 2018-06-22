@@ -16,5 +16,5 @@ const elmApp = Elm.Main.embed(elmDiv, {
 });
 
 elmApp.ports.setSession.subscribe(function (session) {
-    localStorage.setItem('gibs-session', session);
+    localStorage.setItem('gibs-session', JSON.stringify(session));
 });

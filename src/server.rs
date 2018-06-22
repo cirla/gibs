@@ -2,6 +2,7 @@ use actix::*;
 use actix_web::server::HttpServer;
 use actix_web::{fs, http, App, HttpResponse};
 
+use auth::{login_route};
 use lobby::{lobby_route, Lobby};
 use settings::Settings;
 
@@ -33,6 +34,7 @@ impl Server {
                             .finish()
                     })
                 })
+                .resource("/login", |r| r.method(http::Method::POST).with(login_route))
                 .resource("/ws", |r| r.route().f(lobby_route))
                 .handler("/static/", fs::StaticFiles::new("dist/"))
         }).bind(format!("{}:{}", s.server.host, s.server.port))

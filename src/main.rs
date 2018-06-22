@@ -10,6 +10,7 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
+mod auth;
 mod game;
 mod lobby;
 mod server;

@@ -13,3 +13,5 @@ type alias Model =
 type Msg
     = Login
     | LoginResponse (Result Http.Error Session)
+    | Password String
+    | Username String

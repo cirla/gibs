@@ -18,8 +18,13 @@ update msg model =
             ( model, login model )
 
         LoginResponse res ->
-            -- TODO: set session from response; handle error
             ( model, Cmd.none )
+
+        Password p ->
+            ( { model | password = p }, Cmd.none )
+
+        Username u ->
+            ( { model | username = u }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
