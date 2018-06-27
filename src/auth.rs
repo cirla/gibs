@@ -1,4 +1,5 @@
 use actix_web::{Json, Responder, State};
+use argon2rs::verifier::Encoded;
 use diesel::prelude::*;
 
 use models::User;
@@ -41,13 +42,24 @@ pub fn login_route(data: (State<server::State>, Json<Login>)) -> impl Responder 
         .unwrap();
 
     if res.is_empty() {
+        // TODO: error code
         return Json(Response::Error(Error {
-            message: "Error".to_string(),
+            message: "username not found".to_string(),
+        }));
+    }
+
+    let res = &res[0];
+
+    let enc = Encoded::from_u8(&res.password_hash.as_str().as_bytes()).unwrap();
+    if !enc.verify(&login.password.as_str().as_bytes()) {
+        // TODO: error code
+        return Json(Response::Error(Error {
+            message: "invalid password".to_string(),
         }));
     }
 
     Json(Response::Session(Session {
-        username: res[0].username.clone(),
+        username: res.username.clone(),
         token: "abc123".to_string(),
     }))
 }

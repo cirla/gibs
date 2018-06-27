@@ -52,10 +52,10 @@ updateLogin msg model =
     case msg of
         Login.Types.LoginResponse res ->
             case res of
-                Ok session ->
+                Ok (Login.Types.Session session) ->
                     { model | session = Just session } ! [ setSession session, connect session.token ]
 
-                Err e ->
+                _ ->
                     -- TODO: Handle Error
                     ( model, Cmd.none )
 

@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate actix;
 extern crate actix_web;
+extern crate argon2rs;
 extern crate chrono;
 extern crate clap;
 extern crate config;
