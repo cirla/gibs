@@ -16,13 +16,13 @@ pub struct Lobby {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Sqlite {
-    pub path: String,
+pub struct Postgres {
+    pub url: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Database {
-    pub sqlite: Sqlite,
+    pub postgres: Postgres,
 }
 
 #[derive(Debug, Deserialize)]

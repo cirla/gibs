@@ -1,0 +1,8 @@
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  elo SMALLINT NOT NULL DEFAULT 1200
+);

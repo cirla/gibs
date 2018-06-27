@@ -1,18 +1,25 @@
 #[macro_use]
 extern crate actix;
 extern crate actix_web;
+extern crate chrono;
 extern crate clap;
 extern crate config;
+#[macro_use]
+extern crate diesel;
 extern crate env_logger;
 extern crate futures;
 #[macro_use]
 extern crate log;
+extern crate r2d2;
+extern crate r2d2_diesel;
 #[macro_use]
 extern crate serde_derive;
 
 mod auth;
 mod game;
 mod lobby;
+mod models;
+mod schema;
 mod server;
 mod settings;
 
