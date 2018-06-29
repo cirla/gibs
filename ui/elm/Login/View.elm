@@ -1,13 +1,37 @@
 module Login.View exposing (root)
 
-import Html exposing (Html, button, div, form, input, label, p, text)
+import Html exposing (Html, button, div, form, i, input, label, p, text)
 import Html.Attributes exposing (class, for, id, type_)
+import Html.Attributes.Aria exposing (role)
 import Html.Events exposing (onInput, onSubmit)
+import Http exposing (Error(..))
 import Login.Types exposing (..)
 
 
-root : Html Msg
-root =
+root : Model -> Html Msg
+root model =
+    div []
+        (Maybe.map (error >> List.singleton) model.error
+            |> Maybe.withDefault []
+            |> (flip (++)) [ loginForm ]
+        )
+
+
+error : Error -> Html Msg
+error e =
+    div [ class "alert alert-danger", role "alert" ]
+        [ i [ class "fas fa-exclamation-circle" ] []
+        , case e of
+            BadStatus resp ->
+                text resp.body
+
+            _ ->
+                text "An error has occurred."
+        ]
+
+
+loginForm : Html Msg
+loginForm =
     form [ onSubmit Login ]
         [ div [ class "form-group" ]
             [ label [ for "loginUsername" ] [ text "Username" ]

@@ -44,27 +44,21 @@ update msg model =
 
 handleIncoming : String -> Model -> ( Model, Cmd Msg )
 handleIncoming msg model =
-    ( model, Cmd.none )
+    model ! []
 
 
 updateLogin : Login.Types.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg model =
     case msg of
-        Login.Types.LoginResponse res ->
-            case res of
-                Ok (Login.Types.Session session) ->
-                    { model | session = Just session } ! [ setSession session, connect session.token ]
-
-                _ ->
-                    -- TODO: Handle Error
-                    ( model, Cmd.none )
+        Login.Types.LoginResponse (Ok session) ->
+            { model | session = Just session } ! [ setSession session, connect session.token ]
 
         _ ->
             let
                 ( login, loginCmd ) =
                     Login.State.update msg model.login
             in
-                ( { model | login = login }, Cmd.map LoginMsg loginCmd )
+                { model | login = login } ! [ Cmd.map LoginMsg loginCmd ]
 
 
 subscriptions : Model -> Sub Msg

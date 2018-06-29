@@ -15,29 +15,25 @@ init flags location =
         ( lobby, lobbyCmd ) =
             Lobby.State.init flags.session
     in
-        ( { route = route
-          , lobby = lobby
-          }
-        , Cmd.map LobbyMsg lobbyCmd
-        )
+        { route = route
+        , lobby = lobby
+        }
+            ! [ Cmd.map LobbyMsg lobbyCmd ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         UrlChange location ->
-            ( { model | route = parseRoute location }
-            , Cmd.none
-            )
+            { model | route = parseRoute location } ! []
 
         LobbyMsg lobbyMsg ->
             let
                 ( lobby, lobbyCmd ) =
                     Lobby.State.update lobbyMsg model.lobby
             in
-                ( { model | lobby = lobby }
-                , Cmd.map LobbyMsg lobbyCmd
-                )
+                { model | lobby = lobby }
+                    ! [ Cmd.map LobbyMsg lobbyCmd ]
 
 
 subscriptions : Model -> Sub Msg

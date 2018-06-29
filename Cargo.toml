@@ -28,6 +28,7 @@ r2d2 = "0.8.2"
 r2d2-diesel = "1.0.0"
 serde = "1.0.67"
 serde_derive = "1.0.67"
+serde_json = "1.0.22"
 
 [dependencies.diesel]
 features = ["chrono", "postgres"]

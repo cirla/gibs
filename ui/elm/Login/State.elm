@@ -8,6 +8,7 @@ init : Model
 init =
     { username = ""
     , password = ""
+    , error = Nothing
     }
 
 
@@ -15,17 +16,21 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Login ->
-            ( model, login model )
+            model ! [ login model ]
 
         LoginResponse res ->
-            -- Handled by parent
-            ( model, Cmd.none )
+            case res of
+                Err e ->
+                    { model | error = Just e } ! []
+
+                _ ->
+                    { model | error = Nothing } ! []
 
         Password p ->
-            ( { model | password = p }, Cmd.none )
+            { model | password = p } ! []
 
         Username u ->
-            ( { model | username = u }, Cmd.none )
+            { model | username = u } ! []
 
 
 subscriptions : Model -> Sub Msg

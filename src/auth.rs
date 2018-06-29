@@ -1,6 +1,8 @@
-use actix_web::{Json, Responder, State};
+use actix_web::{self, HttpRequest, HttpResponse, Json, Responder, State};
+use actix_web::http::{StatusCode};
 use argon2rs::verifier::Encoded;
 use diesel::prelude::*;
+use serde_json;
 
 use models::User;
 use server;
@@ -20,14 +22,29 @@ pub struct Session {
 #[derive(Serialize)]
 pub struct Error {
     message: String,
+    #[serde(skip_serializing)]
+    status: StatusCode,
 }
 
-#[derive(Serialize)]
-pub enum Response {
-    #[serde(rename = "session")]
+pub enum LoginResponse {
     Session(Session),
-    #[serde(rename = "error")]
     Error(Error),
+}
+
+impl Responder for LoginResponse {
+    type Item = HttpResponse;
+    type Error = actix_web::Error;
+
+    fn respond_to<S>(self, _req: &HttpRequest<S>) -> Result<HttpResponse, actix_web::Error> {
+        let res = match self {
+            LoginResponse::Session(s) =>
+                HttpResponse::Ok().json(s),
+            LoginResponse::Error(e) =>
+                HttpResponse::build(e.status).json(e),
+        };
+
+        Ok(res)
+    }
 }
 
 pub fn login_route(data: (State<server::State>, Json<Login>)) -> impl Responder {
@@ -42,24 +59,24 @@ pub fn login_route(data: (State<server::State>, Json<Login>)) -> impl Responder 
         .unwrap();
 
     if res.is_empty() {
-        // TODO: error code
-        return Json(Response::Error(Error {
+        return LoginResponse::Error(Error {
             message: "username not found".to_string(),
-        }));
+            status: StatusCode::BAD_REQUEST,
+        });
     }
 
     let res = &res[0];
 
     let enc = Encoded::from_u8(&res.password_hash.as_str().as_bytes()).unwrap();
     if !enc.verify(&login.password.as_str().as_bytes()) {
-        // TODO: error code
-        return Json(Response::Error(Error {
+        return LoginResponse::Error(Error {
             message: "invalid password".to_string(),
-        }));
+            status: StatusCode::UNAUTHORIZED,
+        });
     }
 
-    Json(Response::Session(Session {
+    LoginResponse::Session(Session {
         username: res.username.clone(),
         token: "abc123".to_string(),
-    }))
+    })
 }

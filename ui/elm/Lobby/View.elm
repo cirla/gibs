@@ -14,7 +14,7 @@ root model =
             viewLobby session model
 
         Nothing ->
-            Html.map LoginMsg Login.View.root
+            Html.map LoginMsg (Login.View.root model.login)
 
 
 viewLobby : Session -> Model -> Html Msg

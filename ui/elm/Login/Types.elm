@@ -7,16 +7,12 @@ import Session exposing (Session)
 type alias Model =
     { username : String
     , password : String
+    , error : Maybe Http.Error
     }
 
 
 type Msg
     = Login
-    | LoginResponse (Result Http.Error Response)
+    | LoginResponse (Result Http.Error Session)
     | Password String
     | Username String
-
-
-type Response
-    = Session Session
-    | Error String
