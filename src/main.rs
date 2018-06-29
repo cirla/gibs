@@ -9,6 +9,7 @@ extern crate config;
 extern crate diesel;
 extern crate env_logger;
 extern crate futures;
+extern crate jsonwebtoken as jwt;
 #[macro_use]
 extern crate log;
 extern crate r2d2;

@@ -10,6 +10,7 @@ use lobby::{lobby_route, Lobby};
 use settings::Settings;
 
 pub struct State {
+    pub secret: String,
     pub lobby_addr: Addr<Syn, Lobby>,
     pub conn_pool: Pool<ConnectionManager<PgConnection>>,
 }
@@ -30,8 +31,10 @@ impl Server {
             .build(conn_mgr)
             .expect("Failed to create database connection pool.");
 
+        let secret = s.server.secret;
         HttpServer::new(move || {
             let state = State {
+                secret: secret.clone(),
                 lobby_addr: lobby.clone(),
                 conn_pool: conn_pool.clone(),
             };

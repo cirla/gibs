@@ -2,7 +2,7 @@ use actix_web::{self, HttpRequest, HttpResponse, Json, Responder, State};
 use actix_web::http::{StatusCode};
 use argon2rs::verifier::Encoded;
 use diesel::prelude::*;
-use serde_json;
+use jwt;
 
 use models::User;
 use server;
@@ -11,6 +11,11 @@ use server;
 pub struct Login {
     username: String,
     password: String,
+}
+
+#[derive(Serialize)]
+pub struct Claims {
+    username: String,
 }
 
 #[derive(Serialize)]
@@ -75,8 +80,11 @@ pub fn login_route(data: (State<server::State>, Json<Login>)) -> impl Responder 
         });
     }
 
+    let claims = Claims { username: res.username.clone() };
+    let token = jwt::encode(&jwt::Header::default(), &claims, state.secret.as_ref()).unwrap();
+
     LoginResponse::Session(Session {
-        username: res.username.clone(),
-        token: "abc123".to_string(),
+        username: claims.username,
+        token: token,
     })
 }

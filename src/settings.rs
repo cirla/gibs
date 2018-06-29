@@ -8,6 +8,7 @@ pub struct Server {
     pub debug: bool,
     pub host: String,
     pub port: u16,
+    pub secret: String,
 }
 
 #[derive(Debug, Deserialize)]
