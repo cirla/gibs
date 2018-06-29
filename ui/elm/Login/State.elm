@@ -31,8 +31,3 @@ update msg model =
 
         Username u ->
             { model | username = u } ! []
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none

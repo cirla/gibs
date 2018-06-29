@@ -13,7 +13,7 @@ init flags location =
             parseRoute location
 
         ( lobby, lobbyCmd ) =
-            Lobby.State.init flags.session
+            Lobby.State.init location flags.session
     in
         { route = route
         , lobby = lobby

@@ -10,11 +10,12 @@ import Login.Types exposing (..)
 
 root : Model -> Html Msg
 root model =
-    div []
-        (Maybe.map (error >> List.singleton) model.error
-            |> Maybe.withDefault []
-            |> (flip (++)) [ loginForm ]
-        )
+    let
+        errorDiv =
+            Maybe.map (error >> List.singleton) model.error
+                |> Maybe.withDefault []
+    in
+        div [] (errorDiv ++ [ loginForm ])
 
 
 error : Error -> Html Msg

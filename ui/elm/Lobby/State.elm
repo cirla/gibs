@@ -6,12 +6,13 @@ import Lobby.Types exposing (..)
 import Login.State
 import Login.Types
 import Maybe.Extra exposing (join)
+import Navigation exposing (Location)
 import Session exposing (..)
 import WebSocket exposing (listen)
 
 
-init : Maybe String -> ( Model, Cmd Msg )
-init session =
+init : Location -> Maybe String -> ( Model, Cmd Msg )
+init location session =
     let
         res =
             Maybe.map (decodeString decodeSession) session
@@ -19,17 +20,11 @@ init session =
         model =
             { login = Login.State.init
             , session = Maybe.map Result.toMaybe res |> join
+            , location = location
             , events = []
             }
     in
-        ( model
-        , case model.session of
-            Just s ->
-                connect s.token
-
-            Nothing ->
-                Cmd.none
-        )
+        model ! (Maybe.withDefault [] <| Maybe.map (.token >> connect model.location >> List.singleton) model.session)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -51,7 +46,7 @@ updateLogin : Login.Types.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg model =
     case msg of
         Login.Types.LoginResponse (Ok session) ->
-            { model | session = Just session } ! [ setSession session, connect session.token ]
+            { model | session = Just session } ! [ setSession session, connect model.location session.token ]
 
         _ ->
             let
@@ -63,4 +58,9 @@ updateLogin msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    listen "ws://localhost:8081/ws" IncomingMsg
+    case model.session of
+        Just s ->
+            listen (wsUrl model.location) IncomingMsg
+
+        Nothing ->
+            Sub.none
