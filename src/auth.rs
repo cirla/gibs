@@ -15,7 +15,7 @@ pub struct Login {
 
 #[derive(Serialize)]
 pub struct Claims {
-    username: String,
+    user_id: i32,
 }
 
 #[derive(Serialize)]
@@ -80,11 +80,11 @@ pub fn login_route(data: (State<server::State>, Json<Login>)) -> impl Responder 
         });
     }
 
-    let claims = Claims { username: res.username.clone() };
+    let claims = Claims { user_id: res.id.clone() };
     let token = jwt::encode(&jwt::Header::default(), &claims, state.secret.as_ref()).unwrap();
 
     LoginResponse::Session(Session {
-        username: claims.username,
+        username: res.username.clone(),
         token: token,
     })
 }

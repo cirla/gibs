@@ -3,27 +3,30 @@ use std::time::Instant;
 
 use actix::*;
 use actix_web::{ws, Error, HttpRequest, HttpResponse};
+use serde_json;
+use uuid::Uuid;
 
+use models::User;
 use server::State;
 
 #[derive(Message)]
 pub struct Message(pub String);
 
 #[derive(Message)]
-#[rtype(result = "Result<usize, String>")]
+#[rtype(result = "Result<(), String>")]
 pub struct Connect {
+    pub id: Uuid,
     pub addr: Recipient<Syn, Message>,
 }
 
-/// Session is disconnected
 #[derive(Message)]
 pub struct Disconnect {
-    pub id: usize,
+    pub id: Uuid,
 }
 
 pub struct Lobby {
     max_sessions: usize,
-    sessions: HashMap<usize, Recipient<Syn, Message>>,
+    sessions: HashMap<Uuid, Recipient<Syn, Message>>,
 }
 
 impl Lobby {
@@ -40,20 +43,17 @@ impl Actor for Lobby {
 }
 
 impl Handler<Connect> for Lobby {
-    type Result = Result<usize, String>;
+    type Result = Result<(), String>;
 
-    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: Connect, _ctx: &mut Context<Self>) -> Self::Result {
         info!("New connection");
-        let id = 0;
-
         if self.sessions.len() == self.max_sessions {
             info!("Too many users!");
             return Err("Too many users!".to_string());
         }
 
-        self.sessions.insert(id, msg.addr);
-
-        Ok(id)
+        self.sessions.insert(msg.id, msg.addr);
+        Ok(())
     }
 }
 
@@ -66,10 +66,81 @@ impl Handler<Disconnect> for Lobby {
     }
 }
 
+#[derive(Deserialize)]
+struct Auth {
+    token: String,
+}
+
+#[derive(Deserialize)]
+struct Say {
+    message: String,
+}
+
+#[derive(Deserialize)]
+enum Incoming {
+    #[serde(rename = "connect")]
+    Connect(Auth),
+    #[serde(rename = "say")]
+    Say(Say),
+}
+
+#[derive(Serialize)]
+struct Connected {
+    username: String,
+}
+
+#[derive(Serialize)]
+struct Disconnected {
+    username: String,
+}
+
+#[derive(Serialize)]
+struct ChatMessage {
+    username: String,
+    body: String,
+}
+
+#[derive(Serialize)]
+enum Outgoing {
+    #[serde(rename = "connected")]
+    Connected(Connected),
+    #[serde(rename = "disconnected")]
+    Disconnected(Disconnected),
+    #[serde(rename = "error")]
+    Error(String),
+    #[serde(rename = "message")]
+    Message(ChatMessage),
+}
+
 struct LobbySession {
-    id: usize,
+    id: Uuid,
     hb: Instant,
-    //user: Option<User>,
+    user: Option<User>,
+}
+
+impl LobbySession {
+    fn handle_text(&mut self, text: String) -> Result<Outgoing, serde_json::Error> {
+        let incoming: Incoming = serde_json::from_str(&text)?;
+        match incoming {
+            Incoming::Connect(auth) => Ok(self.handle_connect(auth.token)),
+            Incoming::Say(say) => Ok(self.handle_say(say.message)),
+        }
+    }
+
+    fn handle_connect(&mut self, token: String) -> Outgoing {
+        // TODO: verify token and set self.user, send to lobby to send to all other sessions
+        Outgoing::Connected(Connected {
+            username: "user1".to_string(),
+        })
+    }
+
+    fn handle_say(&self, message: String) -> Outgoing {
+        // TODO: verify user is set, if so send message to lobby to send to all other sessions
+        Outgoing::Message(ChatMessage {
+            username: "user1".to_string(),
+            body: message,
+        })
+    }
 }
 
 impl Actor for LobbySession {
@@ -80,12 +151,13 @@ impl Actor for LobbySession {
         ctx.state()
             .lobby_addr
             .send(Connect {
+                id: self.id,
                 addr: addr.recipient(),
             })
             .into_actor(self)
-            .then(|res, act, ctx| {
+            .then(|res, _act, ctx| {
                 match res {
-                    Ok(Ok(res)) => act.id = res,
+                    Ok(Ok(())) => (),
                     Ok(Err(err)) => ctx.text(err),
                     _ => ctx.stop(),
                 }
@@ -114,13 +186,12 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for LobbySession {
         match msg {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Pong(_) => self.hb = Instant::now(),
-            ws::Message::Text(text) => {
-                println!("Received: {}", text);
-            }
+            ws::Message::Text(text) => match self.handle_text(text) {
+                Ok(ref res) => ctx.text(serde_json::to_string(res).unwrap()),
+                Err(e) => ctx.text(serde_json::to_string(&Outgoing::Error(e.to_string())).unwrap()),
+            },
             ws::Message::Binary(_) => println!("Unexpected binary"),
-            ws::Message::Close(_) => {
-                ctx.stop();
-            }
+            ws::Message::Close(_) => ctx.stop(),
         }
     }
 }
@@ -129,8 +200,9 @@ pub fn lobby_route(req: HttpRequest<State>) -> Result<HttpResponse, Error> {
     ws::start(
         req,
         LobbySession {
-            id: 0,
+            id: Uuid::new_v4(),
             hb: Instant::now(),
+            user: None,
         },
     )
 }

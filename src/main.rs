@@ -17,6 +17,7 @@ extern crate r2d2_diesel;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
+extern crate uuid;
 
 mod auth;
 mod game;

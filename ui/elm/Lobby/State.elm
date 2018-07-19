@@ -18,7 +18,8 @@ init location session =
             Maybe.map (decodeString decodeSession) session
 
         model =
-            { login = Login.State.init
+            { error = Nothing
+            , login = Login.State.init
             , session = Maybe.map Result.toMaybe res |> join
             , location = location
             , events = []
@@ -39,7 +40,16 @@ update msg model =
 
 handleIncoming : String -> Model -> ( Model, Cmd Msg )
 handleIncoming msg model =
-    model ! []
+    let
+        res =
+            decodeString Lobby.Protocol.decode msg
+    in
+        case res of
+            Ok event ->
+                { model | events = event :: model.events } ! []
+
+            Err e ->
+                { model | error = Just e } ! []
 
 
 updateLogin : Login.Types.Msg -> Model -> ( Model, Cmd Msg )

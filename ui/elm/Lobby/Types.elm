@@ -6,7 +6,8 @@ import Session exposing (Session)
 
 
 type alias Model =
-    { login : Login.Types.Model
+    { error : Maybe String
+    , login : Login.Types.Model
     , session : Maybe Session
     , location : Location
     , events : List Event

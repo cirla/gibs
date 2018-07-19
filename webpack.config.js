@@ -70,6 +70,7 @@ var devConfig = {
     proxy: [{
       context: ['/login', '/ws'],
       target: 'http://localhost:8081',
+      ws: true,
     }]
   },
   module: {
