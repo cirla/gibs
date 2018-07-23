@@ -48,7 +48,7 @@ impl Server {
                     })
                 })
                 .resource("/login", |r| r.method(http::Method::POST).with(login_route))
-                .resource("/ws", |r| r.route().f(lobby_route))
+                .resource("/ws", |r| r.route().with(lobby_route))
                 .handler("/static/", fs::StaticFiles::new("dist/"))
         }).bind(format!("{}:{}", s.server.host, s.server.port))
             .expect("Could not bind to host/port.")

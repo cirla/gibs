@@ -1,4 +1,4 @@
-module Lobby.Protocol exposing (connect, decode, say, wsUrl)
+module Lobby.Protocol exposing (decode, say, wsUrl)
 
 import Json.Decode exposing (Decoder, field, oneOf, string, succeed)
 import Json.Decode.Extra exposing ((|:))
@@ -14,6 +14,7 @@ decode =
         [ field "connected" decodeConnected
         , field "disconnected" decodeDisconnected
         , field "message" decodeMessage
+        , field "error" decodeError
         ]
 
 
@@ -36,35 +37,30 @@ decodeMessage =
         |: field "body" string
 
 
-connect : Location -> String -> Cmd msg
-connect location token =
-    Json.object
-        [ ( "connect"
-          , Json.object
-                [ ( "token", Json.string token ) ]
-          )
-        ]
-        |> send location
+decodeError : Decoder Event
+decodeError =
+    succeed Error
+        |: field "message" string
 
 
-say : Location -> String -> Cmd msg
-say location message =
+say : Location -> String -> String -> Cmd msg
+say location token message =
     Json.object
         [ ( "say"
           , Json.object
                 [ ( "body", Json.string message ) ]
           )
         ]
-        |> send location
+        |> send location token
 
 
-send : Location -> Json.Value -> Cmd msg
-send location payload =
-    WebSocket.send (wsUrl location) (Json.encode 0 payload)
+send : Location -> String -> Json.Value -> Cmd msg
+send location token payload =
+    WebSocket.send (wsUrl location token) (Json.encode 0 payload)
 
 
-wsUrl : Location -> String
-wsUrl location =
+wsUrl : Location -> String -> String
+wsUrl location token =
     let
         protocol =
             if (String.contains "https" location.protocol) then
@@ -76,5 +72,6 @@ wsUrl location =
             [ protocol
             , "://"
             , location.host
-            , "/ws"
+            , "/ws?token="
+            , token
             ]

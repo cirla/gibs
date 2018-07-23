@@ -18,14 +18,13 @@ init location session =
             Maybe.map (decodeString decodeSession) session
 
         model =
-            { error = Nothing
-            , login = Login.State.init
+            { login = Login.State.init
             , session = Maybe.map Result.toMaybe res |> join
             , location = location
             , events = []
             }
     in
-        model ! (Maybe.withDefault [] <| Maybe.map (.token >> connect model.location >> List.singleton) model.session)
+        model ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -49,14 +48,14 @@ handleIncoming msg model =
                 { model | events = event :: model.events } ! []
 
             Err e ->
-                { model | error = Just e } ! []
+                { model | events = Error e :: model.events } ! []
 
 
 updateLogin : Login.Types.Msg -> Model -> ( Model, Cmd Msg )
 updateLogin msg model =
     case msg of
         Login.Types.LoginResponse (Ok session) ->
-            { model | session = Just session } ! [ setSession session, connect model.location session.token ]
+            { model | session = Just session } ! [ setSession session ]
 
         _ ->
             let
@@ -70,7 +69,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     case model.session of
         Just s ->
-            listen (wsUrl model.location) IncomingMsg
+            listen (wsUrl model.location (Maybe.withDefault "" <| Maybe.map .token model.session)) IncomingMsg
 
         Nothing ->
             Sub.none

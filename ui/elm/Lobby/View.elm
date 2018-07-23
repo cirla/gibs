@@ -18,29 +18,14 @@ root model =
             Html.map LoginMsg (Login.View.root model.login)
 
 
-error : String -> Html Msg
-error e =
-    div [ class "alert alert-danger", role "alert" ]
-        [ i [ class "fas fa-exclamation-circle" ] []
-        , text e
-        ]
-
-
 viewLobby : Session -> Model -> Html Msg
 viewLobby session model =
-    let
-        errorDiv =
-            Maybe.map (error >> List.singleton) model.error
-                |> Maybe.withDefault []
-    in
-        div []
-            (errorDiv
-                ++ [ p []
-                        [ text <| "Welcome, " ++ session.username ++ "!"
-                        ]
-                   , ul [ class "list-group" ] (List.map viewEvent model.events)
-                   ]
-            )
+    div []
+        [ p []
+            [ text <| "Welcome, " ++ session.username ++ "!"
+            ]
+        , ul [ class "list-group" ] (List.map viewEvent model.events)
+        ]
 
 
 viewEvent : Event -> Html Msg
@@ -55,4 +40,7 @@ viewEvent event =
 
             Message user msg ->
                 text (user ++ ": " ++ msg)
+
+            Error msg ->
+                text ("Error: " ++ msg)
         ]

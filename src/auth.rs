@@ -1,8 +1,12 @@
+use actix_web::http::StatusCode;
 use actix_web::{self, HttpRequest, HttpResponse, Json, Responder, State};
-use actix_web::http::{StatusCode};
 use argon2rs::verifier::Encoded;
+use diesel;
+use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use jwt;
+use jwt::{self, Validation};
+use r2d2::PooledConnection;
+use r2d2_diesel::ConnectionManager;
 
 use models::User;
 use server;
@@ -13,7 +17,7 @@ pub struct Login {
     password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct Claims {
     user_id: i32,
 }
@@ -26,14 +30,49 @@ pub struct Session {
 
 #[derive(Serialize)]
 pub struct Error {
-    message: String,
+    pub message: String,
     #[serde(skip_serializing)]
-    status: StatusCode,
+    pub status: StatusCode,
 }
 
 pub enum LoginResponse {
     Session(Session),
     Error(Error),
+}
+
+impl From<jwt::errors::Error> for Error {
+    fn from(error: jwt::errors::Error) -> Self {
+        Self {
+            message: error.to_string(),
+            status: StatusCode::UNAUTHORIZED,
+        }
+    }
+}
+
+impl From<diesel::result::Error> for Error {
+    fn from(error: diesel::result::Error) -> Self {
+        Self {
+            message: error.to_string(),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+pub fn verify_token(
+    conn: PooledConnection<ConnectionManager<PgConnection>>,
+    secret: String,
+    token: String,
+) -> Result<User, Error> {
+    use schema::users::dsl::*;
+
+    info!("token: {}", token);
+    let token_data: jwt::TokenData<Claims> =
+        jwt::decode::<Claims>(&token, secret.as_ref(), &Validation::default())?;
+    info!("user_id: {}", token_data.claims.user_id);
+    let user: User = users.find(token_data.claims.user_id).first(&*conn)?;
+    info!("username: {}", user.username);
+
+    Ok(user)
 }
 
 impl Responder for LoginResponse {
@@ -42,10 +81,8 @@ impl Responder for LoginResponse {
 
     fn respond_to<S>(self, _req: &HttpRequest<S>) -> Result<HttpResponse, actix_web::Error> {
         let res = match self {
-            LoginResponse::Session(s) =>
-                HttpResponse::Ok().json(s),
-            LoginResponse::Error(e) =>
-                HttpResponse::build(e.status).json(e),
+            LoginResponse::Session(s) => HttpResponse::Ok().json(s),
+            LoginResponse::Error(e) => HttpResponse::build(e.status).json(e),
         };
 
         Ok(res)
@@ -80,7 +117,9 @@ pub fn login_route(data: (State<server::State>, Json<Login>)) -> impl Responder 
         });
     }
 
-    let claims = Claims { user_id: res.id.clone() };
+    let claims = Claims {
+        user_id: res.id.clone(),
+    };
     let token = jwt::encode(&jwt::Header::default(), &claims, state.secret.as_ref()).unwrap();
 
     LoginResponse::Session(Session {

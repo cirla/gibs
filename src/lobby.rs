@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use actix::*;
-use actix_web::{ws, Error, HttpRequest, HttpResponse};
+use actix_web::{self, ws, HttpRequest, HttpResponse, Query};
 use serde_json;
 use uuid::Uuid;
 
+use auth::verify_token;
 use models::User;
 use server::State;
 
@@ -67,19 +68,12 @@ impl Handler<Disconnect> for Lobby {
 }
 
 #[derive(Deserialize)]
-struct Auth {
-    token: String,
-}
-
-#[derive(Deserialize)]
 struct Say {
     message: String,
 }
 
 #[derive(Deserialize)]
 enum Incoming {
-    #[serde(rename = "connect")]
-    Connect(Auth),
     #[serde(rename = "say")]
     Say(Say),
 }
@@ -95,6 +89,11 @@ struct Disconnected {
 }
 
 #[derive(Serialize)]
+struct Error {
+    message: String,
+}
+
+#[derive(Serialize)]
 struct ChatMessage {
     username: String,
     body: String,
@@ -107,7 +106,7 @@ enum Outgoing {
     #[serde(rename = "disconnected")]
     Disconnected(Disconnected),
     #[serde(rename = "error")]
-    Error(String),
+    Error(Error),
     #[serde(rename = "message")]
     Message(ChatMessage),
 }
@@ -115,29 +114,20 @@ enum Outgoing {
 struct LobbySession {
     id: Uuid,
     hb: Instant,
-    user: Option<User>,
+    user: User,
 }
 
 impl LobbySession {
     fn handle_text(&mut self, text: String) -> Result<Outgoing, serde_json::Error> {
         let incoming: Incoming = serde_json::from_str(&text)?;
         match incoming {
-            Incoming::Connect(auth) => Ok(self.handle_connect(auth.token)),
             Incoming::Say(say) => Ok(self.handle_say(say.message)),
         }
     }
 
-    fn handle_connect(&mut self, token: String) -> Outgoing {
-        // TODO: verify token and set self.user, send to lobby to send to all other sessions
-        Outgoing::Connected(Connected {
-            username: "user1".to_string(),
-        })
-    }
-
     fn handle_say(&self, message: String) -> Outgoing {
-        // TODO: verify user is set, if so send message to lobby to send to all other sessions
         Outgoing::Message(ChatMessage {
-            username: "user1".to_string(),
+            username: self.user.username.clone(),
             body: message,
         })
     }
@@ -188,21 +178,44 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for LobbySession {
             ws::Message::Pong(_) => self.hb = Instant::now(),
             ws::Message::Text(text) => match self.handle_text(text) {
                 Ok(ref res) => ctx.text(serde_json::to_string(res).unwrap()),
-                Err(e) => ctx.text(serde_json::to_string(&Outgoing::Error(e.to_string())).unwrap()),
+                Err(e) => ctx.text(
+                    serde_json::to_string(&Outgoing::Error(Error {
+                        message: e.to_string(),
+                    })).unwrap(),
+                ),
             },
-            ws::Message::Binary(_) => println!("Unexpected binary"),
+            ws::Message::Binary(_) => info!("Unexpected binary"),
             ws::Message::Close(_) => ctx.stop(),
         }
     }
 }
 
-pub fn lobby_route(req: HttpRequest<State>) -> Result<HttpResponse, Error> {
-    ws::start(
-        req,
-        LobbySession {
-            id: Uuid::new_v4(),
-            hb: Instant::now(),
-            user: None,
-        },
-    )
+#[derive(Deserialize)]
+pub struct ConnectParams {
+    token: String,
+}
+
+pub fn lobby_route(
+    data: (HttpRequest<State>, Query<ConnectParams>),
+) -> Result<HttpResponse, actix_web::Error> {
+    let (req, params) = data;
+
+    let token = params.token.clone();
+    let conn = req.state().conn_pool.get().unwrap();
+    let secret = req.state().secret.clone();
+
+    match verify_token(conn, secret, token) {
+        Ok(user) => ws::start(
+            req,
+            LobbySession {
+                id: Uuid::new_v4(),
+                hb: Instant::now(),
+                user: user,
+            },
+        ),
+        Err(e) => {
+            info!("error: {}", e.message);
+            Ok(HttpResponse::build(e.status).json(e))
+        }
+    }
 }
