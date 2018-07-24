@@ -72,6 +72,17 @@ impl Handler<Disconnect> for Lobby {
     }
 }
 
+impl Handler<Outgoing> for Lobby {
+    type Result = ();
+
+    fn handle(&mut self, msg: Outgoing, _: &mut Context<Self>) {
+        for (_, session) in &self.sessions {
+            let _ = session.do_send(msg.clone());
+        }
+    }
+}
+
+
 #[derive(Deserialize)]
 struct Say {
     message: String,
@@ -83,28 +94,28 @@ enum Incoming {
     Say(Say),
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct Connected {
     username: String,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct Disconnected {
     username: String,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct Error {
     message: String,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct ChatMessage {
     username: String,
     body: String,
 }
 
-#[derive(Message, Serialize)]
+#[derive(Clone, Message, Serialize)]
 pub enum Outgoing {
     #[serde(rename = "connected")]
     Connected(Connected),
@@ -122,10 +133,14 @@ struct LobbySession {
 }
 
 impl LobbySession {
-    fn handle_text(&mut self, text: String) -> Result<Outgoing, serde_json::Error> {
+    fn handle_text(&mut self, lobby_addr: Addr<Syn, Lobby>, text: String) -> Result<(), serde_json::Error> {
         let incoming: Incoming = serde_json::from_str(&text)?;
         match incoming {
-            Incoming::Say(say) => Ok(self.handle_say(say.message)),
+            Incoming::Say(say) => {
+                let res = self.handle_say(say.message);
+                lobby_addr.do_send(res);
+                Ok(())
+            },
         }
     }
 
@@ -181,8 +196,8 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for LobbySession {
         match msg {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Pong(_) => self.hb = Instant::now(),
-            ws::Message::Text(text) => match self.handle_text(text) {
-                Ok(ref res) => ctx.text(serde_json::to_string(res).unwrap()),
+            ws::Message::Text(text) => match self.handle_text(ctx.state().lobby_addr.clone(), text) {
+                Ok(()) => (),
                 Err(e) => {
                     error!("{}", e.to_string());
                     ctx.text(

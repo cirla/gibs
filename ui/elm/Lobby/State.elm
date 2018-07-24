@@ -22,6 +22,7 @@ init location session =
             , session = Maybe.map Result.toMaybe res |> join
             , location = location
             , events = []
+            , input = ""
             }
     in
         model ! []
@@ -35,6 +36,12 @@ update msg model =
 
         LoginMsg loginMsg ->
             updateLogin loginMsg model
+
+        Input input ->
+            { model | input = input } ! []
+
+        Submit ->
+            { model | input = "" } ! [ say model.location (Maybe.withDefault "" <| Maybe.map .token model.session) model.input ]
 
 
 handleIncoming : String -> Model -> ( Model, Cmd Msg )

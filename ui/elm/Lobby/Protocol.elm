@@ -48,7 +48,7 @@ say location token message =
     Json.object
         [ ( "say"
           , Json.object
-                [ ( "body", Json.string message ) ]
+                [ ( "message", Json.string message ) ]
           )
         ]
         |> send location token

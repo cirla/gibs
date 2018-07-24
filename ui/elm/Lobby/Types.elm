@@ -10,6 +10,7 @@ type alias Model =
     , session : Maybe Session
     , location : Location
     , events : List Event
+    , input : String
     }
 
 
@@ -23,3 +24,5 @@ type Event
 type Msg
     = LoginMsg Login.Types.Msg
     | IncomingMsg String
+    | Input String
+    | Submit

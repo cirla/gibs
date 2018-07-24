@@ -28,7 +28,7 @@ All top-level messages contain a single key which is the type of the contained m
 
 ```json
 {
-    "body": "Hello!"
+    "message": "Hello!"
 }
 ```
 
