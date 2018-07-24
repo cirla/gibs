@@ -13,7 +13,7 @@ use server::State;
 #[rtype(result = "Result<(), String>")]
 pub struct Connect {
     pub id: i32,
-    pub addr: Recipient<Syn, Outgoing>,
+    pub addr: Recipient<Outgoing>,
 }
 
 #[derive(Message)]
@@ -23,7 +23,7 @@ pub struct Disconnect {
 
 pub struct Lobby {
     max_sessions: usize,
-    sessions: HashMap<i32, Recipient<Syn, Outgoing>>,
+    sessions: HashMap<i32, Recipient<Outgoing>>,
 }
 
 impl Lobby {
@@ -133,7 +133,7 @@ struct LobbySession {
 }
 
 impl LobbySession {
-    fn handle_text(&mut self, lobby_addr: Addr<Syn, Lobby>, text: String) -> Result<(), serde_json::Error> {
+    fn handle_text(&mut self, lobby_addr: Addr<Lobby>, text: String) -> Result<(), serde_json::Error> {
         let incoming: Incoming = serde_json::from_str(&text)?;
         match incoming {
             Incoming::Say(say) => {
@@ -156,7 +156,7 @@ impl Actor for LobbySession {
     type Context = ws::WebsocketContext<Self, State>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let addr: Addr<Syn, _> = ctx.address();
+        let addr: Addr<_> = ctx.address();
         ctx.state()
             .lobby_addr
             .send(Connect {
@@ -230,7 +230,7 @@ pub fn lobby_route(
     match verify_token(conn, secret, token) {
         // TODO: check if user already connected
         Ok(user) => ws::start(
-            req,
+            &req,
             LobbySession {
                 hb: Instant::now(),
                 user: user,

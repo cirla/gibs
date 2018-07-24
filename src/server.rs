@@ -11,7 +11,7 @@ use settings::Settings;
 
 pub struct State {
     pub secret: String,
-    pub lobby_addr: Addr<Syn, Lobby>,
+    pub lobby_addr: Addr<Lobby>,
     pub conn_pool: Pool<ConnectionManager<PgConnection>>,
 }
 
@@ -24,7 +24,7 @@ impl Server {
         let sys = System::new("gibs");
 
         let max_users = s.lobby.max_users;
-        let lobby: Addr<Syn, _> = Arbiter::start(move |_| Lobby::new(max_users));
+        let lobby: Addr<Lobby> = Arbiter::start(move |_| Lobby::new(max_users));
 
         let conn_mgr = ConnectionManager::<PgConnection>::new(s.db.postgres.url);
         let conn_pool = Pool::builder()
@@ -49,7 +49,7 @@ impl Server {
                 })
                 .resource("/login", |r| r.method(http::Method::POST).with(login_route))
                 .resource("/ws", |r| r.route().with(lobby_route))
-                .handler("/static/", fs::StaticFiles::new("dist/"))
+                .handler("/static/", fs::StaticFiles::new("dist/").unwrap())
         }).bind(format!("{}:{}", s.server.host, s.server.port))
             .expect("Could not bind to host/port.")
             .start();
