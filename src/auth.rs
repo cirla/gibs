@@ -65,12 +65,9 @@ pub fn verify_token(
 ) -> Result<User, Error> {
     use schema::users::dsl::*;
 
-    info!("token: {}", token);
     let token_data: jwt::TokenData<Claims> =
         jwt::decode::<Claims>(&token, secret.as_ref(), &Validation::default())?;
-    info!("user_id: {}", token_data.claims.user_id);
-    let user: User = users.find(token_data.claims.user_id).first(&*conn)?;
-    info!("username: {}", user.username);
+    let user = users.find(token_data.claims.user_id).first(&*conn)?;
 
     Ok(user)
 }

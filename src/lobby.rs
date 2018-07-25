@@ -12,13 +12,15 @@ use server::State;
 #[derive(Message)]
 #[rtype(result = "Result<(), String>")]
 pub struct Connect {
-    pub id: i32,
+    pub user_id: i32,
+    pub username: String,
     pub addr: Recipient<Outgoing>,
 }
 
 #[derive(Message)]
 pub struct Disconnect {
-    pub id: i32,
+    pub user_id: i32,
+    pub username: String,
 }
 
 pub struct Lobby {
@@ -47,13 +49,15 @@ impl Handler<Connect> for Lobby {
             return Err("Too many users!".to_string());
         }
 
+        let out = Outgoing::Connected(Connected {
+            username: msg.username,
+        });
+
         for (_, session) in &self.sessions {
-            let _ = session.do_send(Outgoing::Connected(Connected {
-                username: msg.id.to_string(),
-            }));
+            let _ = session.do_send(out.clone());
         }
 
-        self.sessions.insert(msg.id, msg.addr);
+        self.sessions.insert(msg.user_id, msg.addr);
         Ok(())
     }
 }
@@ -62,12 +66,14 @@ impl Handler<Disconnect> for Lobby {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
-        self.sessions.remove(&msg.id);
+        self.sessions.remove(&msg.user_id);
+
+        let out = Outgoing::Disconnected(Disconnected {
+            username: msg.username,
+        });
 
         for (_, session) in &self.sessions {
-            let _ = session.do_send(Outgoing::Disconnected(Disconnected {
-                username: msg.id.to_string(),
-            }));
+            let _ = session.do_send(out.clone());
         }
     }
 }
@@ -81,7 +87,6 @@ impl Handler<Outgoing> for Lobby {
         }
     }
 }
-
 
 #[derive(Deserialize)]
 struct Say {
@@ -133,14 +138,18 @@ struct LobbySession {
 }
 
 impl LobbySession {
-    fn handle_text(&mut self, lobby_addr: Addr<Lobby>, text: String) -> Result<(), serde_json::Error> {
+    fn handle_text(
+        &mut self,
+        lobby_addr: Addr<Lobby>,
+        text: String,
+    ) -> Result<(), serde_json::Error> {
         let incoming: Incoming = serde_json::from_str(&text)?;
         match incoming {
             Incoming::Say(say) => {
                 let res = self.handle_say(say.message);
                 lobby_addr.do_send(res);
                 Ok(())
-            },
+            }
         }
     }
 
@@ -160,7 +169,8 @@ impl Actor for LobbySession {
         ctx.state()
             .lobby_addr
             .send(Connect {
-                id: self.user.id,
+                user_id: self.user.id,
+                username: self.user.username.clone(),
                 addr: addr.recipient(),
             })
             .into_actor(self)
@@ -176,9 +186,10 @@ impl Actor for LobbySession {
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
-        ctx.state()
-            .lobby_addr
-            .do_send(Disconnect { id: self.user.id });
+        ctx.state().lobby_addr.do_send(Disconnect {
+            user_id: self.user.id,
+            username: self.user.username.clone(),
+        });
         Running::Stop
     }
 }
@@ -196,7 +207,8 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for LobbySession {
         match msg {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Pong(_) => self.hb = Instant::now(),
-            ws::Message::Text(text) => match self.handle_text(ctx.state().lobby_addr.clone(), text) {
+            ws::Message::Text(text) => match self.handle_text(ctx.state().lobby_addr.clone(), text)
+            {
                 Ok(()) => (),
                 Err(e) => {
                     error!("{}", e.to_string());
