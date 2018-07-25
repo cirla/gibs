@@ -15,7 +15,7 @@ repository = "cirla/gibs"
 repository = "cirla/gibs"
 
 [dependencies]
-actix = "0.7.1"
+actix = "0.7.2"
 actix-web = "0.7.1"
 argon2rs = "0.2.5"
 chrono = "0.4.4"
