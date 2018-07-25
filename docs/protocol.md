@@ -1,14 +1,19 @@
 # Protocol
 
-JSON over WebSocket
+JSON over WebSocket on `/ws` endpoint.
+
+## Authorization
+
+Authorization is done via a JWT token sent as a URL query param `token`.
+This token can be obtained via the `/login` endpoint.
 
 ## Envelope
 
-All top-level messages contain a single key which is the type of the contained message, e.g. for `connect`:
+All top-level messages contain a single key which is the type of the contained message, e.g. for `say`:
 
 ```json
 {
-    "connect": {
+    "say": {
         ...
     }
 }
@@ -16,15 +21,7 @@ All top-level messages contain a single key which is the type of the contained m
 
 ## Outgoing
 
-1. `connect`: Connect with an authorized JWT
-
-```json
-{
-    "token": "abc.def.ghi"
-}
-```
-
-2. `say`: Send a message to the lobby
+1. `say`: Send a message to the lobby
 
 ```json
 {
